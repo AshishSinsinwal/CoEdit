@@ -17,7 +17,7 @@ async function startServer() {
 
     // ✅ Correct CORS usage: pass an object
     app.use(cors({
-        origin: "https://co-edit-nine.vercel.app/",
+        origin: "https://co-edit-nine.vercel.app",
         credentials: true
     }));
 
