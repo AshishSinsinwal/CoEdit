@@ -1,0 +1,5 @@
+{
+  "name": "CoEdit - Real-time Collaborative Editor",
+  "description": "A high-performance real-time collaborative document editor using Monaco, Socket.io, and React.",
+  "requestFramePermissions": []
+}
