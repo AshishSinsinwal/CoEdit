@@ -1,7 +1,7 @@
 
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = 'https://coedit-ae4a.onrender.com';
+const SOCKET_URL = import.meta.env.REACT_APP_API_URL;
 
 let socket: Socket | null = null;
 
