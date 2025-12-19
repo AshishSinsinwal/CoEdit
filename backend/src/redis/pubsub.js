@@ -2,10 +2,20 @@ import {createClient} from 'redis';
 import {ENV} from '../config/env.js';
 
 export const pubClient = createClient({
-    url: ENV.REDIS_URL
+    url: ENV.REDIS_URL,
+    socket: {
+  tls: true,
+  keepAlive: 1000,
+}
+
 });
 export const subClient = createClient({
-    url: ENV.REDIS_URL
+    url: ENV.REDIS_URL,
+    socket: {
+  tls: true,
+  keepAlive: 1000,
+}
+
 });
 
 export async function connectPubSub() {

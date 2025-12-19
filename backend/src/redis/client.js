@@ -2,7 +2,11 @@ import {createClient} from "redis";
 import {ENV} from "../config/env.js";
 
 export const redisClient = createClient({
-    url: ENV.REDIS_URL
+    url: ENV.REDIS_URL,
+    socket: {
+        tls: true,
+        keepAlive: 1000,
+    },
 });
 
 redisClient.on("error" , (err) => {
