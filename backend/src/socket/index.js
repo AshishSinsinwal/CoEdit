@@ -16,6 +16,12 @@ export default function setupSocket(io) {
         io.to(docId).emit("document:active_presence", { docId, activeMembers });
     });
 
+    // Listen for volatile cursor movements and relay them instantly
+    subClient.subscribe("document:cursors", (message) => {
+        const payload = JSON.parse(message);
+        io.to(payload.docId).emit("document:cursor", payload);
+    });
+
     // Helper utility to calculate and broadcast active peers
     async function broadcastPresence(docId) {
         const presenceKey = `doc:${docId}:presence`;
@@ -79,6 +85,11 @@ export default function setupSocket(io) {
             await pubClient.publish("document:updates", JSON.stringify({ docId, content, telemetry }));
         });
 
+        // RECEIVE CURSOR MOVEMENT AND PASS THROUGH REDIS PUB/SUB
+        socket.on("document:cursor", async (payload) => {
+            // We do not save this to a database, just broadcast it instantly
+            await pubClient.publish("document:cursors", JSON.stringify(payload));
+        });
 
         // Explicitly handle a user navigating away from the document UI
         socket.on("document:leave", async ({ docId }) => {
@@ -100,7 +111,6 @@ export default function setupSocket(io) {
                 await broadcastPresence(docId);
             }
         });
-
 
         // Automatically catch whenever a user disconnects or closes their tab
         socket.on("disconnecting", async () => {

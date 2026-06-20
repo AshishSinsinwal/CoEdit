@@ -37,6 +37,8 @@ const EditorPage: React.FC = () => {
   const [collabSearch, setCollabSearch] = useState('');
   const [allMembers , setAllMembers] = useState<any[]>([]);
   const [activeMembers , setActiveMembers] = useState<any[]>([]);
+ const cursorWidgetsRef = useRef<{ [userId: string]: any }>({});
+  const cursorThrottleRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentUserId = user?.id || user?._id; 
   const documentOwnerId = location.state?.ownerId;
@@ -96,21 +98,135 @@ const EditorPage: React.FC = () => {
     });
     socket.on('document:active_presence', ({ docId, activeMembers }: { docId: string; activeMembers: any[] }) => {
       if (docId === id) {
-        // Overwrite collaborator state with actual live active arrays!
         setActiveMembers(activeMembers);
+        
+        // Clean up widgets for users who disconnected
+        if (editorRef.current) {
+          const activeIds = activeMembers.map(m => m.id || m._id);
+          Object.keys(cursorWidgetsRef.current).forEach(userId => {
+            if (!activeIds.includes(userId)) {
+              // Remove native content widget
+              editorRef.current.removeContentWidget(cursorWidgetsRef.current[userId]);
+              delete cursorWidgetsRef.current[userId];
+            }
+          });
+        }
       }
+    });
+
+    socket.on('document:cursor', ({ userId, name, position }: { userId: string, name: string, position: any }) => {
+      // Don't draw our own cursor
+      if (userId === (user?.id || user?._id)) return;
+      if (!editorRef.current || !window.monaco) return;
+
+      const editor = editorRef.current;
+
+      // 1. If the widget already exists, just update its position
+      if (cursorWidgetsRef.current[userId]) {
+        const widget = cursorWidgetsRef.current[userId];
+        widget.position = position;
+        editor.layoutContentWidget(widget); // Tells Monaco to visually move it
+        return;
+      }
+
+      // 2. If it doesn't exist, create the DOM element from scratch
+      const color = getUserColor(userId);
+      const domNode = document.createElement('div');
+      
+      // Styling the vertical cursor bar
+      domNode.style.borderLeft = `2px solid ${color}`;
+      domNode.style.height = '26px';
+      domNode.style.position = 'absolute';
+      domNode.style.pointerEvents = 'none';
+      domNode.style.zIndex = '10';
+
+
+      // Styling the floating Name Tag
+      const flagNode = document.createElement('div');
+      flagNode.textContent = name.split(' ')[0]; // First name only
+      flagNode.style.position = 'absolute';
+      flagNode.style.top = '-18px';
+      flagNode.style.left = '-2px';
+      flagNode.style.backgroundColor = color;
+      flagNode.style.color = 'white';
+      flagNode.style.fontSize = '10px';
+      flagNode.style.fontWeight = 'bold';
+      flagNode.style.padding = '2px 6px';
+      flagNode.style.borderRadius = '4px';
+      flagNode.style.borderBottomLeftRadius = '0';
+      flagNode.style.whiteSpace = 'nowrap';
+      flagNode.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+      flagNode.style.opacity = '1'; // 👈 Permanently visible like Google Docs!
+
+      domNode.appendChild(flagNode);
+
+      // 3. Define the Monaco Content Widget object
+      const widget = {
+        getId: () => `cursor-widget-${userId}`,
+        getDomNode: () => domNode,
+        position: position, // Custom property to store current coordinates
+        getPosition: function() {
+          return {
+            position: this.position,
+            preference: [window.monaco.editor.ContentWidgetPositionPreference.EXACT]
+          };
+        }
+      };
+
+      // 4. Save to our ref and inject into Monaco
+      cursorWidgetsRef.current[userId] = widget;
+      editor.addContentWidget(widget);
     });
 
     return () => {
       socket.emit('document:leave', { docId: id });
+      if (editorRef.current) {
+        Object.values(cursorWidgetsRef.current).forEach(widget => {
+          editorRef.current.removeContentWidget(widget);
+        });
+      }
       socket.off('document:init');
       socket.off('document:remoteUpdate');
       socket.off('document:error');
       socket.off('document:access_revoked');
       socket.off('document:added');
       socket.off('document:active_presence');
+      socket.off('document:cursor');
     };
   }, [id, navigate, showListModal]);
+
+  const getUserColor = (identifier: string) => {
+    const colors = ['#f87171', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa', '#f472b6'];
+    let hash = 0;
+    for (let i = 0; i < identifier.length; i++) {
+      hash = identifier.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+
+  const handleEditorDidMount = (editor: any) => { 
+    editorRef.current = editor; 
+
+    // Listen for local cursor changes
+    editor.onDidChangeCursorPosition((e: any) => {
+      // Throttle the socket emission to 50ms
+      if (cursorThrottleRef.current) clearTimeout(cursorThrottleRef.current);
+      
+      cursorThrottleRef.current = setTimeout(() => {
+        const socket = getSocket();
+        if (socket && id && user) {
+          socket.emit('document:cursor', {
+            docId: id,
+            userId: user.id || user._id,
+            name: user.name,
+            position: e.position
+          });
+        }
+      }, 50);
+    });
+  };
+
 
   const fetchCollabs = async () => {
     if (!id) return;
@@ -151,8 +267,6 @@ const EditorPage: React.FC = () => {
       }
     });
   };
-
-  const handleEditorDidMount = (editor: any) => { editorRef.current = editor; };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
