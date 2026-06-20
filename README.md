@@ -1,159 +1,159 @@
 # CoEdit 📝
 
-**Real-Time Collaborative Document Editor**
+> **A server-authoritative, real-time collaborative document editor.**
 
-CoEdit is a real-time collaborative document editor where multiple users can edit the same document simultaneously. It focuses on system design, real-time synchronization, and scalability, rather than rich text features.
+CoEdit is a lightweight, real-time collaborative text editor allowing multiple users to edit the same document simultaneously. Engineered to demonstrate distributed systems concepts, CoEdit prioritizes low-latency synchronization, scalable state management, and clean system architecture over complex rich-text formatting.
 
-Think Google Docs — but simplified and engineered for learning real-time systems.
+Think Google Docs—simplified and built for real-time performance.
 
 ---
 
-## 📸 Screenshots
+## 📸 Sneak Peek
 
+### Landing Page
+![Landing Page](./assets/screenshots/landing1.png)
 
-**Landing Page**  
-![Landing Page](./assets/screenshots//landing.png)
-
-**Dashboard – Your Documents**  
+### Dashboard
 ![Dashboard](./assets/screenshots/dashboard.png)
 
-**Editor – Real-Time Collaboration**  
-![Editor](./assets/screenshots/editor.png)
+### Real-Time Editor
+![Editor](./assets/screenshots/editor1.png)
 
-**Multiple Users Editing**  
-![Multiple Users](./assets/screenshots/multi-user.png)
+### Real-Time collab
+![Editor](./assets/screenshots/collaboration.png)
 
----
-
-## 🚀 Features
-
-* ✏️ Real-time collaborative editing
-* 🔐 Authentication (Email/Password + Google OAuth)
-* 📄 Create and manage documents
-* 👥 Add collaborators by email
-* 💾 Server-authoritative auto-save
-* ⚡ Low-latency updates using Redis + Socket.io
+### multiUser
+![Editor](./assets/screenshots/multi-user1.png.png)
 
 ---
 
-## 🧠 How It Works
+## 🚀 Key Features
 
-```
-User types
-   ↓
-Client sends update to server
-   ↓
-Server validates & orders updates
-   ↓
-Redis stores latest document state
-   ↓
-Redis Pub/Sub broadcasts update
-   ↓
-All connected clients sync instantly
-```
-
-**Why this design?**
-* Server is the single source of truth
-* Simple & deterministic conflict handling (last-write-wins)
-* Scales across multiple backend instances
-* Easy to reason about and debug
+* ⚡ **Real-Time Collaboration:** Low-latency document synchronization across multiple active clients.
+* 🟢 **Live User Presence:** Dynamic tracking of active collaborators and document owners in the current session.
+* 🔐 **Secure Authentication:** JWT-based email/password login alongside Google OAuth integration.
+* 👥 **Access Control:** Invite specific collaborators via email to view and edit personal documents.
+* 💾 **Server-Authoritative State:** Deterministic, last-write-wins conflict handling backed by an auto-saving Redis cache.
 
 ---
 
-## 🏗️ Architecture
+## 🧠 System Architecture
 
-```
-Frontend (React + Monaco Editor)
-    ↓
-Socket.io (WebSocket)
-    ↓
-Backend (Node.js + Express)
-    ↓
-Redis (Live Document State)
-MongoDB (Users, Docs, Permissions)
+CoEdit utilizes a hybrid database approach to balance persistent storage with lightning-fast transient state synchronization.
+
+```text
+[ React Client ] <--(WebSockets)--> [ Node.js Server ]
+                                          |
+                                          ├--> [ Redis Pub/Sub ] --> (Broadcasts to other clients)
+                                          |
+                                          ├--> [ Redis Cache ] (Stores live document state)
+                                          |
+                                          └--> [ MongoDB ] (Persistent storage for Users, Docs, Roles)
 ```
 
-**Why Redis + MongoDB?**
-* Redis → fast, in-memory, real-time document state + Pub/Sub
-* MongoDB → persistent storage for users, documents, collaborators
+### Design Decisions
+
+#### Centralized Source of Truth
+
+The Node.js server maintains authority over the document state, simplifying conflict resolution.
+
+#### Redis for Speed
+
+In-memory caching handles the high-throughput, rapid-fire keystroke updates, while Pub/Sub effortlessly scales message broadcasting across connected sockets.
+
+#### MongoDB for Persistence
+
+Relies on document-based storage for long-term user profiles, access control lists, and overarching document metadata.
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 * React (Vite)
+* Tailwind CSS
 * Monaco Editor
-* Socket.io Client
+* Socket.io-client
 
 ### Backend
+
 * Node.js
-* Express
+* Express.js
 * Socket.io
 
 ### Databases
-* MongoDB (Users, Documents, Collaborators)
-* Redis (Live document state + Pub/Sub)
 
-### Auth
+* MongoDB (Mongoose)
+* Redis
+
+### Authentication
+
 * JWT
-* Google OAuth
+* Google Auth Library
 
 ---
 
-## ⚙️ Local Setup
+## ⚙️ Local Development Setup
 
 ### Prerequisites
-* Node.js
-* Docker
-* MongoDB
 
-### 1️⃣ Start Redis (Local)
+* Node.js (v18+)
+* Docker (for local Redis)
+* MongoDB instance (local or Atlas)
+
+---
+
+### 1. Initialize Redis
 
 ```bash
-docker run -p 6379:6379 redis
+docker run -p 6379:6379 -d redis
 ```
 
-### 2️⃣ Backend Setup
+---
+
+### 2. Backend Setup
 
 ```bash
 cd backend
 npm install
 ```
 
-Create `backend/.env`:
+Create a `.env` file inside the backend directory:
 
 ```env
 PORT=5000
 MONGO_URI=mongodb://localhost:27017/coedit
 REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-secret
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-secret
+JWT_SECRET=your_super_secret_key
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 FRONTEND_URL=http://localhost:5173
 ```
 
-Run backend:
+Start the backend:
 
 ```bash
 npm run dev
 ```
 
-### 3️⃣ Frontend Setup
+---
+
+### 3. Frontend Setup
 
 ```bash
 cd frontend
 npm install
 ```
 
-Create `frontend/.env`:
+Create a `.env` file inside the frontend directory:
 
 ```env
 VITE_BACKEND_URL=http://localhost:5000
-VITE_GOOGLE_CLIENT_ID=your-google-client-id
+VITE_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
-Run frontend:
+Start the frontend:
 
 ```bash
 npm run dev
@@ -161,62 +161,139 @@ npm run dev
 
 ---
 
-## 📡 API Endpoints
+## 📡 API Reference
 
-### Auth
+### Authentication
 
-```
-POST /auth/register
-POST /auth/login
-POST /auth/google
-```
+| Method | Endpoint         | Description                     |
+| ------ | ---------------- | ------------------------------- |
+| POST   | `/auth/register` | Create a new account            |
+| POST   | `/auth/login`    | Authenticate via email/password |
+| POST   | `/auth/google`   | Authenticate via Google OAuth   |
+| GET    | `/auth/me`       | Retrieve current user profile   |
 
 ### Documents
 
-```
-POST /documents
-GET  /documents
-POST /documents/:documentId/collaborators
-GET /documents/:documentId/collaborators
-DELETE /documents/:documentId/collaborators/:email
-DELETE /documents/:id
+| Method | Endpoint                              | Description                            |
+| ------ | ------------------------------------- | -------------------------------------- |
+| GET    | `/documents`                          | List user's owned and shared documents |
+| POST   | `/documents`                          | Create a new document                  |
+| DELETE | `/documents/:id`                      | Delete a document                      |
+| GET    | `/documents/:id/collaborators`        | List authorized users                  |
+| POST   | `/documents/:id/collaborators`        | Grant access to a user                 |
+| DELETE | `/documents/:id/collaborators/:email` | Revoke access                          |
 
-```
-
-Protected routes require:
-
-```
-Authorization: Bearer <JWT>
-```
-
----
-
-## 🔌 Socket Events
-
-### Client → Server
-* `document:join` `{ docId }`
-* `document:update` `{ docId, content }`
-
-### Server → Client
-* `document:init` `{ docId, content }`
-* `document:remoteUpdate` `{ docId, content }`
-* `document:error` `"Access denied"`
+> **Note:** All protected routes require:
+>
+> ```http
+> Authorization: Bearer <token>
+> ```
 
 ---
 
-## ⚠️ Known Limitations (MVP by design)
+## 🔌 Socket Integration
 
-* Full document sync (no CRDT / OT)
-* Concurrent edits on same line → last write wins
-* No cursor presence
-* No version history
+### Client Emissions
+
+```javascript
+document:join { docId }
+```
+
+Subscribes to a document room and fetches initial state.
+
+```javascript
+document:update { docId, content, telemetry }
+```
+
+Pushes a local keystroke update.
+
+```javascript
+document:leave { docId }
+```
+
+Unsubscribes from the room and updates presence.
 
 ---
 
-## 🚧 Future Improvements
+### Server Broadcasts
 
-* CRDT / OT-based conflict resolution
-* Cursor presence & user indicators
-* Version history & rollback
-* Rich text formatting
-* Comments & suggestions
+```javascript
+document:init { docId, content }
+```
+
+Returns the cached Redis state.
+
+```javascript
+document:remoteUpdate { docId, content, telemetry }
+```
+
+Syncs incoming changes from peers.
+
+```javascript
+document:active_presence { docId, activeMembers }
+```
+
+Broadcasts a real-time array of online users.
+
+```javascript
+document:error { message }
+```
+
+Handles unauthorized access attempts.
+
+---
+
+## 🚧 Roadmap & Future Enhancements
+
+While CoEdit currently relies on a highly performant **Last-Write-Wins** model for MVP simplicity, future iterations will explore:
+
+* CRDTs (Conflict-free Replicated Data Types)
+* Operational Transformation (OT)
+* Live Cursor Tracking
+* Version History
+* Document Snapshots & Rollbacks
+* Rich Text Support
+* Inline Comments & Suggestions
+* Presence Indicators
+* Offline Editing Support
+
+---
+
+## 🤝 Contributing
+
+Contributions, suggestions, and feedback are always welcome.
+
+1. Fork the repository
+2. Create a feature branch
+
+```bash
+git checkout -b feature/amazing-feature
+```
+
+3. Commit your changes
+
+```bash
+git commit -m "Add amazing feature"
+```
+
+4. Push to GitHub
+
+```bash
+git push origin feature/amazing-feature
+```
+
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## ⭐ Support
+
+If you found this project useful, consider giving it a star on GitHub.
+
+It helps the project grow and motivates future development.

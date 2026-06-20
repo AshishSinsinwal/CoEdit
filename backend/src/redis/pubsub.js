@@ -4,7 +4,7 @@ import {ENV} from '../config/env.js';
 export const pubClient = createClient({
     url: ENV.REDIS_URL,
     socket: {
-  tls: true,
+  tls: false,
   keepAlive: 1000,
 }
 
@@ -12,7 +12,7 @@ export const pubClient = createClient({
 export const subClient = createClient({
     url: ENV.REDIS_URL,
     socket: {
-  tls: true,
+  tls: false,
   keepAlive: 1000,
 }
 

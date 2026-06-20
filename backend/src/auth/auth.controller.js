@@ -42,7 +42,7 @@ export const googleLogin = async (req, res) => {
     }
 
     const jwtToken = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id, email: user.email , name : user.name },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -75,7 +75,7 @@ export async function register(req, res) {
   });
 
   const token = jwt.sign(
-    { userId: user._id, email: user.email },
+    { userId: user._id, email: user.email , name : user.name },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
@@ -97,7 +97,7 @@ export async function login(req, res) {
   }
 
   const token = jwt.sign(
-    { userId: user._id, email: user.email },
+    { userId: user._id, email: user.email , name : user.name },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
@@ -106,14 +106,20 @@ export async function login(req, res) {
 }
 
 export async function getMe(req, res) {
-  console.log(req);
-  const userId = req.user.userId;
-  console.log(userId);
-  const user = await User.findById(userId).select("-passwordHash");
-  console.log(user);
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId).select("-passwordHash");
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email
+    });
+  } catch (error) {
+    console.error("GetMe Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-  res.json(user);
 }
-

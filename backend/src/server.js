@@ -13,9 +13,8 @@ async function startServer() {
     await connectRedis();
     await connectPubSub();
 
-    const { app, server } = createApp(); // Assuming createApp returns both
+    const { app, server } = createApp();
 
-    // ✅ Correct CORS usage: pass an object
     app.use(cors({
         origin: "https://co-edit-nine.vercel.app",
         credentials: true

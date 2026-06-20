@@ -9,7 +9,7 @@ export function socketAuthMiddleware(socket, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = decoded; // { userId, email }
+    socket.user = decoded;
     next();
   } catch (err) {
     next(new Error("Invalid token"));

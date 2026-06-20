@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 .env
+ThemeContext.tsx
 
 # Editor directories and files
 .vscode/*
